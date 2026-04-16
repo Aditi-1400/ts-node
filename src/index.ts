@@ -26,6 +26,8 @@ import { createModuleTypeClassifier, ModuleTypeClassifier } from './module-type-
 import { createResolverFunctions } from './resolver-functions';
 import type { createEsmHooks as createEsmHooksFn } from './esm';
 import { installCommonjsResolveHooksIfNecessary, ModuleConstructorWithInternals } from './cjs-resolve-hooks';
+import { registerWithHooks } from './register-hooks';
+import { hasRegisterHooks } from './util';
 import { classifyModule } from './node-module-type-classifier';
 import type * as _nodeInternalModulesEsmResolve from '../dist-raw/node-internal-modules-esm-resolve';
 import type * as _nodeInternalModulesEsmGetFormat from '../dist-raw/node-internal-modules-esm-get_format';
@@ -543,15 +545,19 @@ export function register(serviceOrOpts: Service | RegisterOptions | undefined): 
     service = create((serviceOrOpts ?? {}) as RegisterOptions);
   }
 
-  const originalJsHandler = require.extensions['.js'];
-
   // Expose registered instance globally.
   process[REGISTER_INSTANCE] = service;
 
-  // Register the extensions.
-  registerExtensions(service.options.preferTsExts, service.extensions.compiled, service, originalJsHandler);
-
-  installCommonjsResolveHooksIfNecessary(service);
+  if (hasRegisterHooks()) {
+    // New path: unified CJS + ESM hooks via module.registerHooks()
+    registerWithHooks(service);
+    installCommonjsResolveHooksIfNecessary(service);
+  } else {
+    // Legacy path: monkey-patching
+    const originalJsHandler = require.extensions['.js'];
+    registerExtensions(service.options.preferTsExts, service.extensions.compiled, service, originalJsHandler);
+    installCommonjsResolveHooksIfNecessary(service);
+  }
 
   service.installSourceMapSupport();
 

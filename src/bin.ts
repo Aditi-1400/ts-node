@@ -4,7 +4,7 @@ import { join, resolve, dirname, parse as parsePath, relative } from 'path';
 import { inspect } from 'util';
 import Module = require('module');
 let arg: typeof import('arg');
-import { parse, hasOwnProperty, versionGteLt } from './util';
+import { parse, hasOwnProperty, versionGteLt, hasRegisterHooks } from './util';
 import {
   EVAL_FILENAME,
   EvalState,
@@ -317,7 +317,7 @@ Options:
 
   // If ESM is explicitly enabled through the flag, stage3 should be run in a child process
   // with the ESM loaders configured.
-  if (esm) payload.shouldUseChildProcess = true;
+  if (esm && !hasRegisterHooks()) payload.shouldUseChildProcess = true;
 
   return {
     cwd,
@@ -392,7 +392,7 @@ function phase3(payload: BootstrapState) {
 
   // If ESM is enabled through the parsed tsconfig, stage4 should be run in a child
   // process with the ESM loaders configured.
-  if (preloadedConfig.options.esm) payload.shouldUseChildProcess = true;
+  if (preloadedConfig.options.esm && !hasRegisterHooks()) payload.shouldUseChildProcess = true;
 
   return { preloadedConfig };
 }

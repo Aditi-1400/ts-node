@@ -168,3 +168,12 @@ export function versionGteLt(version: string, gteRequirement: string, ltRequirem
     return requirement.split(/[\.-]/).map((s) => parseInt(s, 10));
   }
 }
+
+/** @internal */
+export function hasRegisterHooks(): boolean {
+  try {
+    return typeof require('module').registerHooks === 'function';
+  } catch {
+    return false;
+  }
+}
